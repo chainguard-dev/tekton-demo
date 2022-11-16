@@ -1,0 +1,34 @@
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: tekton
+nodes:
+- role: control-plane
+  image: "kindest/node:1.23.13@sha256:ef453bb7c79f0e3caba88d2067d4196f427794086a7d0df8df4f019d5e336b61"
+  extraMounts:
+  - containerPath: /var/lib/etcd
+    hostPath: /tmp/etcd
+- role: worker
+  image: "kindest/node:1.23.13@sha256:ef453bb7c79f0e3caba88d2067d4196f427794086a7d0df8df4f019d5e336b61"
+# Configure registry for KinD.
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry.local:5000"]
+    endpoint = ["http://registry.local:5000"]
+
+# This is needed in order to support projected volumes with service account tokens.
+# See: https://kubernetes.slack.com/archives/CEKK1KTN2/p1600268272383600
+kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: ClusterConfiguration
+    metadata:
+      name: config
+    apiServer:
+      extraArgs:
+        "service-account-issuer": "https://kubernetes.default.svc"
+        "service-account-key-file": "/etc/kubernetes/pki/sa.pub"
+        "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
+        "service-account-api-audiences": "api,spire-server"
+        "service-account-jwks-uri": "https://kubernetes.default.svc/openid/v1/jwks"
+    networking:
+      dnsDomain: "cluster.local"
