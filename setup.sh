@@ -181,7 +181,6 @@ kubeadmConfigPatches:
         "service-account-issuer": "https://kubernetes.default.svc"
         "service-account-key-file": "/etc/kubernetes/pki/sa.pub"
         "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
-        "service-account-api-audiences": "api,spire-server"
         "service-account-jwks-uri": "https://kubernetes.default.svc/openid/v1/jwks"
     networking:
       dnsDomain: "${CLUSTER_SUFFIX}"
@@ -190,7 +189,7 @@ EOF_SHARED
 cat kind.yaml
 echo '::endgroup::'
 
-kind delete cluster --name "${KIND_CLUSTER_NAME}"
+kind delete cluster --name "${KIND_CLUSTER_NAME}" || true
 echo '::group:: Create KinD Cluster'
 kind create cluster --config kind.yaml --wait 5m
 

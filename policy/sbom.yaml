@@ -1,0 +1,18 @@
+apiVersion: policy.sigstore.dev/v1alpha1
+kind: ClusterImagePolicy
+metadata:
+  name: custom-key-attestation-sbom-spdxjson
+spec:
+  images:
+    - glob: "**"
+  authorities:
+    - name: keyless
+      keyless:
+        url: "https://fulcio.sigstore.dev"
+      attestations:
+        - name: must-have-spdxjson
+          predicateType: spdxjson
+          policy:
+            type: cue
+            data: |
+              predicateType: "https://spdx.dev/Document"

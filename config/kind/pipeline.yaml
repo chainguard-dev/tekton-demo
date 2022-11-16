@@ -4,6 +4,12 @@ metadata:
   name: go-build-pipeline
 spec:
   params:
+    - name: REGISTRY
+      type: string
+      default: gchr.io/chainguard-customers
+    - name: USER
+      type: string
+      default: strongjz
     - name: git-url
     - name: git-revision
     - name: MAIN_DIR
@@ -16,10 +22,10 @@ spec:
     - name: COSIGN_REPOSITORY
       type: string
       default: "ghcr.io/chainguard-customers"
-    - name: fulcio-endpoint
+    - name: FULCIO_ENDPOINT
       description: Fulcio endpoint
       default: "https://fulcio.sigstore.dev"
-    - name: rekor-endpoint
+    - name: REKOR_ENDPOINT
       description: Rekor endpoint
       default: "https://rekor.sigstore.dev"
   results:
@@ -41,52 +47,47 @@ spec:
       workspaces:
         - name: output
           workspace: git-source
-    - name: install-dependencies
-      runAfter:
-      - fetch-from-git
-      taskRef:
-        name: install-go-dependencies
-      workspaces:
-        - name: source
-          workspace: git-source
-        - name: dependencies
-          workspace: dependencies
+
     - name: source-to-image
       taskRef:
         name: ko-build-image
       runAfter:
-        - install-dependencies
+        - fetch-from-git
       workspaces:
         - name: source
-          workspace: dependencies
+          workspace: git-source
       params:
         - name: KO_DOCKER_REPO
           value: $(params.KO_DOCKER_REPO)
         - name: MAIN_DIR
           value: $(params.MAIN_DIR)
-    - name: sign-image
-      taskRef:
-        name: sign-image
-      runAfter:
-      - source-to-image
-      params:
-        - name: IMAGE
-          value: $(tasks.source-to-image.results.DIGESTS)
-        - name: COSIGN_REPOSITORY
-          value: $(params.COSIGN_REPOSITORY)
-        - name: dev.chainguard.refresher.rekor-endpoint
-          value: $(params.rekor-endpoint)
-        - name: dev.chainguard.refresher.fulcio-endpoint
-          value: $(params.fulcio-endpoint)
+
     - name: trivy-scan
       taskRef:
         name: scan-trivy
       runAfter:
         - source-to-image
       params:
-        - name: dev.chainguard.refresher.digest
+        - name: digest
           value: $(tasks.source-to-image.results.DIGESTS)
-        - name: dev.chainguard.refresher.rekor-endpoint
-          value: $(params.rekor-endpoint)
-        - name: dev.chainguard.refresher.fulcio-endpoint
-          value: $(params.fulcio-endpoint)
+        - name: REKOR_ENDPOINT
+          value: $(params.REKOR_ENDPOINT)
+        - name: FULCIO_ENDPOINT
+          value: $(params.FULCIO_ENDPOINT)
+        - name: COSIGN_REPOSITORY
+          value: $(params.COSIGN_REPOSITORY)
+
+    - name: sign-image
+      taskRef:
+        name: sign-image
+      runAfter:
+      - trivy-scan
+      params:
+        - name: IMAGE
+          value: $(tasks.source-to-image.results.DIGESTS)
+        - name: COSIGN_REPOSITORY
+          value: $(params.COSIGN_REPOSITORY)
+        - name: REKOR_ENDPOINT
+          value: $(params.REKOR_ENDPOINT)
+        - name: FULCIO_ENDPOINT
+          value: $(paramsFULCIO_ENDPOINT)
