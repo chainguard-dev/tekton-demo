@@ -28,7 +28,6 @@ kubeadmConfigPatches:
         "service-account-issuer": "https://kubernetes.default.svc"
         "service-account-key-file": "/etc/kubernetes/pki/sa.pub"
         "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
-        "service-account-api-audiences": "api,spire-server"
         "service-account-jwks-uri": "https://kubernetes.default.svc/openid/v1/jwks"
     networking:
       dnsDomain: "cluster.local"

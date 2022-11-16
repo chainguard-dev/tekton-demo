@@ -1,0 +1,21 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: createctconfig
+  namespace: ctlog-system
+spec:
+  backoffLimit: 12
+  template:
+    spec:
+      serviceAccountName: createctconfig
+      restartPolicy: Never
+      automountServiceAccountToken: true
+      containers:
+      - name: createctconfig
+        image: ko://github.com/sigstore/scaffolding/cmd/ctlog/createctconfig
+        args: [
+          "--namespace=ctlog-system",
+          "--configmap=ctlog-config",
+          "--secret=ctlog-secret"
+        ]

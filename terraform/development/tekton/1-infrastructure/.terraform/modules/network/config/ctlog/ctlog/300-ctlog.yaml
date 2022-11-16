@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ctlog
+  namespace: ctlog-system
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  namespace: ctlog-system
+  name: ctlog
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
+    spec:
+      serviceAccountName: ctlog
+      containers:
+        - name: ctfe
+          image: ko://github.com/google/certificate-transparency-go/trillian/ctfe/ct_server
+          args: [
+            "--http_endpoint=0.0.0.0:6962",
+            "--log_config=/ctfe-keys/config",
+            "--alsologtostderr"
+          ]
+          volumeMounts:
+          - name: keys
+            mountPath: "/ctfe-keys"
+            readOnly: true
+          ports:
+          - containerPort: 6962
+      volumes:
+        - name: keys
+          secret:
+            secretName: ctlog-secret

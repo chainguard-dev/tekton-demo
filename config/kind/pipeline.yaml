@@ -1,0 +1,93 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: go-build-pipeline
+spec:
+  params:
+    - name: REGISTRY
+      type: string
+      default: gchr.io/chainguard-customers
+    - name: USER
+      type: string
+      default: strongjz
+    - name: git-url
+    - name: git-revision
+    - name: MAIN_DIR
+      description: Directory containing the main executable (one with main func) to build.
+    - name: KO_DOCKER_REPO
+      description: Registry to push the image to
+    - name: KOFILE
+      description: Path to the .ko.yaml file to use when building with ko.
+      default: ./.ko.yaml
+    - name: COSIGN_REPOSITORY
+      type: string
+      default: "ghcr.io/chainguard-customers"
+    - name: FULCIO_ENDPOINT
+      description: Fulcio endpoint
+      default: "https://fulcio.sigstore.dev"
+    - name: REKOR_ENDPOINT
+      description: Rekor endpoint
+      default: "https://rekor.sigstore.dev"
+  results:
+    - name: IMAGE-DIGEST
+      description: Digest of the image that was created
+      value: $(tasks.source-to-image.results.DIGESTS)
+  workspaces:
+    - name: git-source
+    - name: dependencies
+  tasks:
+    - name: fetch-from-git
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+      workspaces:
+        - name: output
+          workspace: git-source
+
+    - name: source-to-image
+      taskRef:
+        name: ko-build-image
+      runAfter:
+        - fetch-from-git
+      workspaces:
+        - name: source
+          workspace: git-source
+      params:
+        - name: KO_DOCKER_REPO
+          value: $(params.KO_DOCKER_REPO)
+        - name: MAIN_DIR
+          value: $(params.MAIN_DIR)
+
+    - name: trivy-scan
+      taskRef:
+        name: scan-trivy
+      runAfter:
+        - source-to-image
+      params:
+        - name: digest
+          value: $(tasks.source-to-image.results.DIGESTS)
+        - name: REKOR_ENDPOINT
+          value: $(params.REKOR_ENDPOINT)
+        - name: FULCIO_ENDPOINT
+          value: $(params.FULCIO_ENDPOINT)
+        - name: COSIGN_REPOSITORY
+          value: $(params.COSIGN_REPOSITORY)
+
+    - name: sign-image
+      taskRef:
+        name: sign-image
+      runAfter:
+      - trivy-scan
+      params:
+        - name: IMAGE
+          value: $(tasks.source-to-image.results.DIGESTS)
+        - name: COSIGN_REPOSITORY
+          value: $(params.COSIGN_REPOSITORY)
+        - name: REKOR_ENDPOINT
+          value: $(params.REKOR_ENDPOINT)
+        - name: FULCIO_ENDPOINT
+          value: $(paramsFULCIO_ENDPOINT)
