@@ -1,6 +1,6 @@
 # Terraform Tekton
 
-The Tekton and SPIRE implementations run in the `tekton-dev` GKE cluster in the `oci-builder-service-dev` GCP project.
+The Tekton implementations run in the `tekton-dev` GKE cluster in the  GCP project.
 The infrastructure and applications are codified in Terraform in this directory.
 
 Terraform deployment has been split into two phases:
@@ -13,7 +13,7 @@ The infrastructure phase requires access to the GCP project to set up underlying
 The post-installation phase requires access to the private cluster via the bastion, so it must be run after the infrastructure phase has been set up.
 This is why the two phases have been split up.
 
-You can think of phase 1 as setting up all required GCP resources (GKE Cluster, bastion etc), and phase 2 as setting up the applications in the cluster (Tekton, Tekton Chains, and SPIRE).
+You can think of phase 1 as setting up all required GCP resources (GKE Cluster, bastion etc.), and phase 2 as setting up the applications in the cluster (Tekton, Tekton Chains).
 
 ### Infrastructure Phase
 
@@ -31,33 +31,30 @@ This phase requires access to the GCP project.
 This phase focus on deploying Kubernetes applications:
 * Tekton Pipelines
 * Tekton Chains
-* SPIRE
 
 This phase requires access to the GKE cluster via the bastion.
 
-### Deploying Terraform via Github Actions
+### Deploying Terraform via GitHub Actions
 
-Terraform is deployed via a Github Action in the `Cray-HPE/GCP-OCI-Prod-Admin-Setup` Github project.
-
-The Github Action can be found here: https://github.com/Cray-HPE/GCP-OCI-Prod-Admin-Setup/actions/workflows/provision-tekton.yaml
+Terraform is deployed via a GitHub Action in the `tekton-demo` GitHub project.
 
 There are two modes for running this workflow:
 * `plan` 
 * `apply`
 
 Selecting `plan` will print out intended changes to infrastructure Terraform will make, but will not apply them.
-Selecting `apply` will apply the changes to the infrastrcutre.
+Selecting `apply` will apply the changes to the infrastructure.
 
 **Always run `plan` and ensure the changes are acceptable before running `apply`.**
 
-## Github Actions Authentication to GCP
-Github Actions is able to access the GCP project by running under the `github-actions@oci-tekton-service-dev.iam.gserviceaccount.com` service account in the `oci-tekton-service-dev` GCP project.
+## GitHub Actions Authentication to GCP
+GitHub Actions is able to access the GCP project by running under the service account in the GCP project.
 This service account has all required permissions to create the required Terraform infrastructure.
 
-The authentication between GCP and Github was set up by following this [blog post](https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions).
-For convenience, there is a script [github-oidc-setup.sh](../scripts/github-oidc-setup.sh) that can be run to set up the Github identity pool in GCP again.
+The authentication between GCP and GitHub was set up by following this [blog post](https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-GitHub-actions).
+For convenience, there is a script [GitHub-oidc-setup.sh](../scripts/GitHub-oidc-setup.sh) that can be run to set up the GitHub identity pool in GCP again.
 
-This script also creates the `github-actions@oci-tekton-service-dev.iam.gserviceaccount.com` service account if it doesn't exist and applies all required IAM roles to it.
+This script also creates the service account if it doesn't exist and applies all required IAM roles to it.
 
 ## Connecting to the GKE Cluster
 
@@ -67,13 +64,13 @@ To access this cluster, you must create an SSH tunnel via the bastion instance.
 In one terminal tab, run the following to create the SSH tunnel to the bastion instance:
 
 ```
-gcloud compute ssh --zone us-central1-b bastion-6767864a --tunnel-through-iap --project oci-tekton-service-dev -- -N -D 8118
+gcloud compute ssh --zone us-central1-b bastion-6767864a --tunnel-through-iap --project PROJECT_ID -- -N -D 8118
 ```
 
 In another terminal tab, get credentials for the cluster:
 
 ```
-gcloud container clusters get-credentials --project oci-tekton-service-dev --region us-central1-a --internal-ip tekton-dev
+gcloud container clusters get-credentials --project PROJECT_ID --region us-central1-a --internal-ip tekton-dev
 ```
 
 With the above SSH tunnel, one can access the cluster with kubectl after setting the environment variable `HTTPS_PROXY=socks5://localhost:8118`.

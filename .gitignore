@@ -16,3 +16,4 @@
 .idea/
 ko.images
 .terraform
+.terraform.lock.hcl

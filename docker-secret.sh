@@ -25,7 +25,7 @@ kubectl delete secret regcred || true
 
 kubectl create secret docker-registry regcred \
   --docker-server="ghcr.io" \
-  --docker-username="strongjz" \
+  --docker-username="${GIT_USER}" \
   --docker-password="${GITHUB_TOKEN}" \
   --docker-email="${GITHUB_EMAIL}"
 
