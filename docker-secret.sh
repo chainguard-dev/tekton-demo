@@ -14,27 +14,27 @@ metadata:
   name: ghcr-secret
   annotations:
     tekton.dev/git-0: https://github.com
-    tekton.dev/git-1: https://gitlab.com
     tekton.dev/docker-0: https://ghcr.io
 type: kubernetes.io/basic-auth
 stringData:
-  username: ${GITHUB_EMAIL}"
-  password: ${GITHUB_TOKEN}"
+  username: "${GITHUB_EMAIL}"
+  password: "${GITHUB_TOKEN}"
 EOF
 
-kubectl apply -f secret.yaml -n default
-kubectl apply -f secret.yaml -n tekton-pipelines
-kubectl apply -f secret.yaml -n tekton-chains
+kubectl delete secret regcred || true
 
-kubectl patch serviceaccount tekton-chains-controller \
-  -p "{\"imagePullSecrets\": [{\"name\": \"ghcr-secret\"}]}" -n tekton-chains
+kubectl create secret docker-registry regcred \
+  --docker-server="ghcr.io" \
+  --docker-username="strongjz" \
+  --docker-password="${GITHUB_TOKEN}" \
+  --docker-email="${GITHUB_EMAIL}"
+
+kubectl apply -f secret.yaml -n default
 
 kubectl patch serviceaccount default \
-  -p "{\"imagePullSecrets\": [{\"name\": \"ghcr-secret\"}]}" -n default
+  -p "{\"imagePullSecrets\": [{\"name\": \"ghcr-secret\"},{\"name\": \"regcred\"}]}" -n default
 
 kubectl patch serviceaccount build-bot \
   -p "{\"imagePullSecrets\": [{\"name\": \"ghcr-secret\"}]}" -n default
-
-kubectl -n tekton-chains delete po -l app=tekton-chains-controller
 
 rm secret.yaml
