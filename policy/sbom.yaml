@@ -8,7 +8,7 @@ spec:
     - glob: cgr.dev/chainguard/*
     - glob: index.docker.io/library/*
   authorities:
-    - name: keyless
+    - name: keyless-sbom
       keyless:
         url: "https://fulcio.sigstore.dev"
         identities:
