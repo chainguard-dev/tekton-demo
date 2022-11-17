@@ -10,10 +10,10 @@ spec:
   - name: COSIGN_REPOSITORY
     type: string
     default: ""
-  - name: dev.chainguard.refresher.fulcio-endpoint
+  - name: FULCIO_ENDPOINT
     type: string
     default: "https://fulcio.sigstore.dev"
-  - name: dev.chainguard.refresher.rekor-endpoint
+  - name: REKOR_ENDPOINT
     type: string
     default: "https://rekor.sigstore.dev"
   steps:
@@ -25,9 +25,9 @@ spec:
       # Use workload identity to access images
       "--k8s-keychain",
       # Use the Rekor URL provided by the refresher.
-      "--rekor-url", "$(params['dev.chainguard.refresher.rekor-endpoint'])",
+      "--rekor-url", "$(params['REKOR_ENDPOINT'])",
       # Use the Fulcio URL provided by the refresher.
-      "--fulcio-url", "$(params['dev.chainguard.refresher.fulcio-endpoint'])",
+      "--fulcio-url", "$(params['FULCIO_ENDPOINT'])",
       "--force",
       "--allow-insecure-registry",
       "$(params['IMAGE'])",

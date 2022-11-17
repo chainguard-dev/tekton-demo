@@ -28,18 +28,21 @@ kind: PipelineRun
 metadata:
   name: go-build-pipeline-run
 spec:
+  serviceAccountName: default
   params:
     - name: git-url
-      value: "https://github.com/chainguard-customers/tekton-demo"
+      value: "https://github.com/chainguard-dev/tekton-demo"
     - name: git-revision
       value: "main"
     - name: MAIN_DIR
       value: "."
     - name: KO_DOCKER_REPO
-      value: "ghcr.io/chainguard-customers"
-    - name: fulcio-endpoint
+      value: "ghcr.io/chainguard-dev"
+    - name: COSIGN_REPOSITORY
+      value: "ghcr.io/chainguard-dev"
+    - name: FULCIO_ENDPOINT
       value: "https://fulcio.sigstore.dev"
-    - name: rekor-endpoint
+    - name: REKOR_ENDPOINT
       value: "https://rekor.sigstore.dev"
   pipelineRef:
     name: go-build-pipeline

@@ -1,0 +1,11 @@
+apiVersion: policy.sigstore.dev/v1alpha1
+kind: ClusterImagePolicy
+metadata:
+  name: keyless-attestation
+spec:
+  images:
+    - glob: "ghcr.io/chainguard-dev/*"
+  authorities:
+    - name: keyless
+      keyless:
+        url: "https://fulcio.sigstore.dev"

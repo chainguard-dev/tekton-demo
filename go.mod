@@ -1,3 +1,3 @@
-module github.com/chainguard-customer/tekton-demo
+module github.com/chainguard-dev/tekton-demo
 
 go 1.19
