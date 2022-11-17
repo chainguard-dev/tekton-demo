@@ -22,12 +22,6 @@ spec:
     type: string
     default: "https://rekor.sigstore.dev"
   steps:
-  - name: test
-    image: cgr.dev/chainguard/alpine-base:latest
-    script: |
-      cat /var/run/sigstore/cosign
-    
-
   - name: trivyscan
     image: docker.io/aquasec/trivy:0.23.0
     command: ["trivy"]
@@ -49,6 +43,7 @@ spec:
       "--timeout=0",
       # Force the upload
       "--force",
+      "--type vuln",
       # Use the Rekor URL provided by the refresher.
       "--rekor-url", "$(params['REKOR_ENDPOINT'])",
       # Use the Fulcio URL provided by the refresher.

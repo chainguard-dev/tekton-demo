@@ -20,6 +20,9 @@ spec:
     - name: USER
       type: string
       default: strongjz
+    - name: COSIGN_REPOSITORY
+      type: string
+      default: ghcr.io/chainguard-dev/tekon-demo
   results:
     - name: IMAGES
       description: Digest of the image just built.
@@ -52,11 +55,54 @@ spec:
           cpu: 1
       script: |
         cd $(workspaces.source.path)
-        ko build --bare --image-refs=ko.images $(params.MAIN_DIR)
+        ko build --bare --sbom spdx-json --tags $(git rev-parse --short HEAD) --image-refs=ko.images $(params.MAIN_DIR)
         
         echo "Image build: $(cat ko.images)"
         
         cat ko.images | tee /tekton/results/IMAGES
         
         cat /tekton/results/IMAGES
+
+    - name: cosign-attest-sbom
+      image: ubuntu:latest
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+        export IMAGE_ID=$(cat $(workspaces.source.path)/ko.images)
+        echo "Signing SBOM for IMAGE: ${IMAGE_ID}"
         
+        apt update -y -qq >/dev/null 2>&1
+        apt-get install -qq -y curl >/dev/null 2>&1
+        curl -s -k -L https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64 -o cosign
+        chmod +x cosign && mv cosign /usr/local/bin/cosign
+        
+        cosign version
+        cosign login "${REGISTRY}" -u "${USER}" -p "${GITHUB_TOKEN}"
+        cosign download sbom "${IMAGE_ID}" --output-file bom.spdx.json
+        cosign attest --k8s-keychain --timeout=0 --force --type spdxjson --predicate bom.spdx.json "${IMAGE_ID}"
+
+      env:
+        - name: REGISTRY
+          value: $(params.REGISTRY)
+        - name: USER
+          value: $(params.USER)
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.github-token-secret)
+              key: GITHUB_TOKEN
+        - name: COSIGN_EXPERIMENTAL
+          value: "1"
+        - name: COSIGN_REPOSITORY
+          value: $(params.COSIGN_REPOSITORY)
+      volumeMounts:
+        - name: oidc-info
+          mountPath: /var/run/sigstore/cosign
+  volumes:
+    - name: oidc-info
+      projected:
+        sources:
+          - serviceAccountToken:
+              path: oidc-token
+              expirationSeconds: 600 # Use as short-lived as possible.
+              audience: sigstore

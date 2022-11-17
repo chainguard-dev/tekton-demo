@@ -5,9 +5,9 @@ setup:
 	./setup.sh
 
 pipeline:
-	kubectl apply -f config/common
-	kubectl apply -f config/kind
-	kubectl apply -f config/go
+	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/common
+	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/kind
+	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/go
 
 github_token:
 	kubectl delete secret github-token || true
@@ -17,6 +17,6 @@ docker_secret:
 	./docker-secret.sh
 
 run:
-	 tkn pipeline start go-build-pipeline --use-pipelinerun go-build-pipeline-run
+	 HTTPS_PROXY=socks5://localhost:8118 tkn pipeline start go-build-pipeline --use-pipelinerun go-build-pipeline-run
 
 clean:

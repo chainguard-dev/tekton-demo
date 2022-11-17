@@ -4,7 +4,9 @@ metadata:
   name: custom-key-attestation-sbom-spdxjson
 spec:
   images:
-    - glob: "**"
+    - glob: ghcr.io/chainguard-dev/*
+    - glob: cgr.dev/chainguard/*
+    - glob: index.docker.io/library/*
   authorities:
     - name: keyless
       keyless:

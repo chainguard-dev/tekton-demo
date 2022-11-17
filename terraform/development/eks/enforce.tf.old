@@ -1,0 +1,161 @@
+variable "AWS_ROOT_GROUP" {
+  default = "d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7"
+}
+
+variable "registry" {
+  default = "ghcr.io/chainguard-dev"
+}
+
+resource "chainguard_group" "root" {
+  name        = var.CUSTOMER_NAME
+  description = "root group for ${var.CUSTOMER_NAME}"
+  parent_id   = var.AWS_ROOT_GROUP
+}
+
+output "customer-root-group" {
+  value = chainguard_group.root.id
+}
+
+variable "ENFORCE_DOMAIN" {
+  description = "enforce domain to add cluster and policy too"
+}
+
+variable "CONSOLE_URL" {
+  description = "Chainguard console to use"
+}
+
+variable "ISSUER_URL" {
+  description = "Chainguard OIDC Issue to trust"
+}
+
+variable "NOTIFY_LEVEL" {
+  description = "Slack Notification level to use"
+}
+
+resource "chainguard_policy" "aws" {
+  parent_id   = chainguard_group.root.id
+  description = "Allowing AWS KMS Signed images"
+  document = jsonencode({
+    apiVersion = "policy.sigstore.dev/v1beta1"
+    kind       = "ClusterImagePolicy"
+    metadata = {
+      name = "aws-key-signing"
+    }
+    spec = {
+      images = [
+      {
+        glob = "${var.registry}/${local.adobe_images.cluster-registry-client.name}*"
+      },
+        {
+        glob = "${var.registry}/${local.adobe_images.alertmanager-forwarder.name}*"
+        },
+        {
+        glob = "${var.registry}/${local.adobe_images.cluster-registry-server.name}*"
+        },
+        {
+        glob = "${var.registry}/${local.adobe_images.k8s-shredder.name}*"
+        }
+      ]
+      authorities = [{
+        name = "aws"
+        key = {
+          kms = "awskms:///${aws_kms_key.cosign.arn}"
+        }
+      }]
+    }
+  })
+}
+
+resource "chainguard_policy" "sbom" {
+  parent_id   = chainguard_group.root.id
+  description = "Sbom Attestations"
+  document = jsonencode({
+    apiVersion = "policy.sigstore.dev/v1beta1"
+    kind       = "ClusterImagePolicy"
+    metadata = {
+      name = "signed-sboms"
+    }
+    "spec" = {
+      "authorities" = [
+        {
+          "attestations" = [
+            {
+              "name" = "must-have-sbom",
+              "policy" = {
+                "data" = "predicateType: \"https://spdx.dev/Document\"",
+                "type" = "cue"
+              },
+              "predicateType" = "spdxjson"
+            }
+          ],
+          "key" = {
+            kms = "awskms:///${aws_kms_key.cosign.arn}"
+          },
+          "name" = "aws-key"
+        }
+      ],
+      "images" = [
+        {
+          glob = "${var.registry}/${local.adobe_images.cluster-registry-client.name}*"
+        },
+        {
+          glob = "${var.registry}/${local.adobe_images.alertmanager-forwarder.name}*"
+        },
+        {
+          glob = "${var.registry}/${local.adobe_images.cluster-registry-server.name}*"
+        },
+        {
+          glob = "${var.registry}/${local.adobe_images.k8s-shredder.name}*"
+        },
+
+      ]
+    }
+  })
+}
+
+resource "chainguard_policy" "vuln" {
+  parent_id   = chainguard_group.root.id
+  description = "Vulnerability Attestations"
+  document = jsonencode({
+    apiVersion = "policy.sigstore.dev/v1beta1"
+    kind       = "ClusterImagePolicy"
+    metadata = {
+      name = "signed-vuln"
+    }
+    "spec" = {
+      "authorities" = [
+        {
+          "attestations" = [
+            {
+              "name" = "must-have-vul-attest",
+              "policy" = {
+                "data" = "predicateType: \"cosign.sigstore.dev/attestation/vuln/v1\"",
+                "type" = "cue"
+              },
+              "predicateType" = "vuln"
+            }
+          ],
+          "key" = {
+            kms = "awskms:///${aws_kms_key.cosign.arn}"
+          },
+          "name" = "aws-key"
+        }
+      ],
+      "images" = [
+        {
+          glob = "${var.registry}/${local.adobe_images.cluster-registry-client.name}*"
+        },
+        {
+          glob = "${var.registry}/${local.adobe_images.alertmanager-forwarder.name}*"
+        },
+        {
+          glob = "${var.registry}/${local.adobe_images.cluster-registry-server.name}*"
+        },
+        {
+          glob = "${var.registry}/${local.adobe_images.k8s-shredder.name}*"
+        },
+
+      ]
+    }
+  })
+}

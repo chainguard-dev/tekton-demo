@@ -1,7 +1,7 @@
 apiVersion: policy.sigstore.dev/v1alpha1
 kind: ClusterImagePolicy
 metadata:
-  name: keyless-attestation
+  name: keyless-attestation-gitsign
 spec:
   images:
     - glob: ghcr.io/chainguard-dev/*
@@ -16,3 +16,9 @@ spec:
             subject: https://kubernetes.io/namespaces/tekton-chains/serviceaccounts/tekton-chains-controller
           - issuer: https://accounts.google.com
             subjectRegExp: .+@chainguard.dev$
+      attestations:
+        - name: must-have-gitsign
+          policy:
+            type: cue
+            data: |
+              predicateType: "gitsign.sigstore.dev/predicate/git/v0.1"

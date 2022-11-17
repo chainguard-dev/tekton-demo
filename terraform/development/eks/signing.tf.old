@@ -1,0 +1,24 @@
+resource "aws_kms_key" "cosign" {
+
+  description              = "Signing key ${aws_ecr_repository.demo.name}"
+  deletion_window_in_days  = 10
+  key_usage                = "SIGN_VERIFY"
+  customer_master_key_spec = "RSA_4096"
+}
+
+resource "aws_kms_alias" "cosign" {
+  name          = "alias/${var.CUSTOMER_NAME}"
+  target_key_id = aws_kms_key.cosign.key_id
+}
+
+output "kms_alias" {
+  value = aws_kms_alias.cosign
+}
+
+output "kms_arn" {
+  value = aws_kms_key.cosign.arn
+}
+
+output "aws_kms_alias" {
+  value = aws_kms_alias.cosign.arn
+}
