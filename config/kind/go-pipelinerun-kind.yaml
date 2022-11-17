@@ -37,7 +37,7 @@ spec:
     - name: MAIN_DIR
       value: "."
     - name: KO_DOCKER_REPO
-      value: "ghcr.io/chainguard-dev"
+      value: "ghcr.io/chainguard-dev/tekton-demo"
     - name: COSIGN_REPOSITORY
       value: "ghcr.io/chainguard-dev"
     - name: FULCIO_ENDPOINT

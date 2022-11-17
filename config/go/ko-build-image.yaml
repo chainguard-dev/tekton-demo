@@ -9,7 +9,7 @@ spec:
     - name: KO_DOCKER_REPO
       description: Registry to push the image to
       type: string
-      default: ghcr.io/chainguard-dev
+      default: ghcr.io/chainguard-dev/tekon-demo
     - name: github-token-secret
       type: string
       description: name of the secret holding the github-token
@@ -52,7 +52,7 @@ spec:
           cpu: 1
       script: |
         cd $(workspaces.source.path)
-        ko build --image-refs=ko.images $(params.MAIN_DIR)
+        ko build --bare --image-refs=ko.images $(params.MAIN_DIR)
         
         echo "Image build: $(cat ko.images)"
         
