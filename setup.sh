@@ -103,11 +103,11 @@ if [ ${RUNNING_ON_LINUX} == "true" ]; then
   sudo mount -t tmpfs tmpfs /tmp/etcd
 fi
 
-if ! command -v kind &> /dev/null; then
+if ! command -v gcp &> /dev/null; then
   echo ":: Installing Kind ::"
-  curl -Lo ./kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-$(uname)-$(THIS_HW)"
-  chmod +x ./kind
-  sudo mv kind /usr/local/bin
+  curl -Lo ./gcp "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-$(uname)-$(THIS_HW)"
+  chmod +x ./gcp
+  sudo mv gcp /usr/local/bin
 fi
 
 echo '::endgroup::'
@@ -120,7 +120,7 @@ echo '::endgroup::'
 echo '::group:: Build KinD Config'
 
 if [ ${RUNNING_ON_LINUX} == "true" ]; then
-  cat > kind.yaml <<EOF_LINUX
+  cat > gcp.yaml <<EOF_LINUX
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: ${KIND_CLUSTER_NAME}
@@ -136,7 +136,7 @@ EOF_LINUX
 fi
 
 if [ ${RUNNING_ON_MAC} == "true" ]; then
-  cat > kind.yaml <<EOF_MAC
+  cat > gcp.yaml <<EOF_MAC
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: ${KIND_CLUSTER_NAME}
@@ -149,7 +149,7 @@ EOF_MAC
 fi
 
 if [ ${RUNNING_ON_WINDOWS} == "true" ]; then
-  cat > kind.yaml <<EOF_WINDOWS
+  cat > gcp.yaml <<EOF_WINDOWS
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: ${KIND_CLUSTER_NAME}
@@ -161,7 +161,7 @@ nodes:
 EOF_WINDOWS
 fi
 
-cat >> kind.yaml <<EOF_SHARED
+cat >> gcp.yaml <<EOF_SHARED
 # Configure registry for KinD.
 containerdConfigPatches:
 - |-
@@ -186,12 +186,12 @@ kubeadmConfigPatches:
       dnsDomain: "${CLUSTER_SUFFIX}"
 EOF_SHARED
 
-cat kind.yaml
+cat gcp.yaml
 echo '::endgroup::'
 
-kind delete cluster --name "${KIND_CLUSTER_NAME}" || true
+gcp delete cluster --name "${KIND_CLUSTER_NAME}" || true
 echo '::group:: Create KinD Cluster'
-kind create cluster --config kind.yaml --wait 5m
+gcp create cluster --config gcp.yaml --wait 5m
 
 kubectl describe nodes
 echo '::endgroup::'
@@ -222,7 +222,7 @@ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manife
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
 kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
 
-network=$(docker network inspect kind -f "{{(index .IPAM.Config 0).Subnet}}" | cut -d '.' -f1,2)
+network=$(docker network inspect gcp -f "{{(index .IPAM.Config 0).Subnet}}" | cut -d '.' -f1,2)
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap

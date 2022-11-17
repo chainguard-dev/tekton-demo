@@ -6,7 +6,7 @@ setup:
 
 pipeline:
 	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/common
-	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/kind
+	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/gcp
 	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/go
 
 github_token:

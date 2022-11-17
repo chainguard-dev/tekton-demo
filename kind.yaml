@@ -1,4 +1,4 @@
-apiVersion: kind.x-k8s.io/v1alpha4
+apiVersion: gcp.x-k8s.io/v1alpha4
 kind: Cluster
 name: tekton
 nodes:
