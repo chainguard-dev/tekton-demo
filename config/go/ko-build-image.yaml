@@ -31,7 +31,7 @@ spec:
       description: Where the dependencies and source code are.
   steps:
     - name: ko-build-image
-      image: ghcr.io/google/ko:0187841b164187cd835eb96519d5e282d69ca688
+      image: ghcr.io/google/ko:latest
       env:
         - name: REGISTRY
           value: $(params.REGISTRY)
@@ -55,7 +55,7 @@ spec:
           cpu: 1
       script: |
         cd $(workspaces.source.path)
-        ko build --bare --sbom spdx-json --tags $(git rev-parse --short HEAD) --image-refs=ko.images $(params.MAIN_DIR)
+        ko build --bare --sbom spdx-json $(params.MAIN_DIR) --tags $(git rev-parse --short HEAD) --image-refs=ko.images 
         
         echo "Image build: $(cat ko.images)"
         
@@ -78,8 +78,8 @@ spec:
         
         cosign version
         cosign login "${REGISTRY}" -u "${USER}" -p "${GITHUB_TOKEN}"
-        cosign download sbom "${IMAGE_ID}" --output-file bom.spdx.json
-        cosign attest --k8s-keychain --timeout=0 --force --type spdxjson --predicate bom.spdx.json "${IMAGE_ID}"
+        cosign download sbom --output-file bom.spdx.json "${IMAGE_ID}"
+        cosign attest --k8s-keychain -y --timeout=0 --force --type spdxjson --predicate bom.spdx.json "${IMAGE_ID}"
 
       env:
         - name: REGISTRY

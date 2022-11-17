@@ -1,0 +1,91 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "sbom-sha256:bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2022-11-16T01:00:51Z",
+    "creators": [
+      "Tool: ko (devel)"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "http://spdx.org/spdxdocs/ko/sha256:bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa",
+  "documentDescribes": [
+    "SPDXRef-Package-sha256-bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa"
+  ],
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-sha256-bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa",
+      "name": "sha256:bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa",
+      "filesAnalyzed": false,
+      "licenseDeclared": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "primaryPackagePurpose": "CONTAINER",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:oci/image@sha256:bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa?mediaType=application%2Fvnd.oci.image.manifest.v1%2Bjson",
+          "referenceType": "purl"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-sha256-005911d2e522e119d3c0159f1fb8e00c2a032ccb4e0472965dfed31ad6b481b1",
+      "name": "cgr.dev/chainguard/alpine-base@sha256:005911d2e522e119d3c0159f1fb8e00c2a032ccb4e0472965dfed31ad6b481b1",
+      "versionInfo": "cgr.dev/chainguard/alpine-base@sha256:a18fa9705203b2623082947200ef313f4cd2269007d22c64b2abd6a1846b6451",
+      "filesAnalyzed": false,
+      "licenseDeclared": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "005911d2e522e119d3c0159f1fb8e00c2a032ccb4e0472965dfed31ad6b481b1"
+        }
+      ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:oci/image@sha256:005911d2e522e119d3c0159f1fb8e00c2a032ccb4e0472965dfed31ad6b481b1?repository_url=cgr.dev%2Fchainguard%2Falpine-base",
+          "referenceType": "purl"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-github.com.chainguard-dev.tekton-demo-(devel)",
+      "name": "github.com/chainguard-dev/tekton-demo",
+      "filesAnalyzed": false,
+      "licenseDeclared": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "downloadLocation": "https://github.com/chainguard-dev/tekton-demo",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:golang/github.com/chainguard-dev/tekton-demo@(devel)?type=module",
+          "referenceType": "purl"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-sha256-bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-sha256-bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa",
+      "relationshipType": "DESCENDANT_OF",
+      "relatedSpdxElement": "SPDXRef-Package-sha256-005911d2e522e119d3c0159f1fb8e00c2a032ccb4e0472965dfed31ad6b481b1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-sha256-bb198a153f1cfc53129301c3de87211111ab3d7524298ce058f284367fc2f9aa",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Package-github.com.chainguard-dev.tekton-demo-(devel)"
+    }
+  ]
+}

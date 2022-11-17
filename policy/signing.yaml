@@ -1,7 +1,7 @@
 apiVersion: policy.sigstore.dev/v1alpha1
 kind: ClusterImagePolicy
 metadata:
-  name: keyless-attestation
+  name: keyless-attestation-update
 spec:
   images:
     - glob: ghcr.io/chainguard-dev/*
