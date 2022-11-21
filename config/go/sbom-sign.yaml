@@ -1,0 +1,75 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sbom-sign
+spec:
+  params:
+    - name: KO_DOCKER_REPO
+      description: Registry to push the image to
+      type: string
+      default: ghcr.io/chainguard-dev/tekton-demo
+    - name: github-token-secret
+      type: string
+      description: name of the secret holding the github-token
+      default: github-token
+    - name: REGISTRY
+      type: string
+      default: ghcr.io
+    - name: USER
+      type: string
+    - name: COSIGN_REPOSITORY
+      type: string
+      default: ghcr.io/chainguard-dev/tekton-demo
+    - name: IMAGE_ID
+      type: string
+      description: Container digest to pull sbom from
+
+  steps:
+      - name: cosign-attest-sbom
+        image: ubuntu:latest
+        script: |
+          #!/usr/bin/env bash
+          set -eu
+          
+          echo "Signing SBOM for IMAGE: $(params.IMAGE_ID)"
+
+          apt update -y -qq >/dev/null 2>&1
+          apt-get install -qq -y curl >/dev/null 2>&1
+          curl -s -k -L https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64 -o cosign
+          chmod +x cosign && mv cosign /usr/local/bin/cosign
+
+          export CR_PAT="${TEST_TOKEN}"
+
+          cosign version
+          echo " Cosign login"
+          cosign login "${REGISTRY}" -u "${USER}" -p "${CR_PAT}"
+          echo "cosign download sbom --output-file bom.spdx.json $(params.IMAGE_ID)"
+          cosign download sbom --k8s-keychain --output-file bom.spdx.json $(params.IMAGE_ID)
+          echo "Cosign Attest"
+          cosign -d attest -y --k8s-keychain --timeout=0 --force --type spdxjson --predicate bom.spdx.json $(params.IMAGE_ID)
+          echo "SBOM SIGNED!"
+        env:
+          - name: REGISTRY
+            value: $(params.REGISTRY)
+          - name: USER
+            value: $(params.USER)
+          - name: TEST_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: $(params.github-token-secret)
+                key: GITHUB_TOKEN
+          - name: COSIGN_EXPERIMENTAL
+            value: "1"
+          - name: COSIGN_REPOSITORY
+            value: $(params.COSIGN_REPOSITORY)
+        volumeMounts:
+          - name: oidc-info
+            mountPath: /var/run/sigstore/cosign
+  volumes:
+    - name: oidc-info
+      projected:
+        sources:
+          - serviceAccountToken:
+              path: oidc-token
+              expirationSeconds: 600 # Use as short-lived as possible.
+              audience: sigstore

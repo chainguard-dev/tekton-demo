@@ -41,7 +41,7 @@ module "cluster" {
   cluster_zone   = var.cluster_zone
   project_id     = var.project_id
   project_number = var.project_number
-
+  cluster_db_encryption_keyring = var.cluster_name
   cluster_name        = var.cluster_name
   cluster_network_tag = var.cluster_network_tag
 

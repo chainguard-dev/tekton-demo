@@ -9,10 +9,6 @@ pipeline:
 	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/gcp
 	HTTPS_PROXY=socks5://localhost:8118 kubectl apply -f config/go
 
-github_token:
-	kubectl delete secret github-token || true
-	@kubectl create secret generic github-token --from-literal=GITHUB_TOKEN="${GITHUB_TOKEN}" --namespace default
-
 docker_secret:
 	./docker-secret.sh
 

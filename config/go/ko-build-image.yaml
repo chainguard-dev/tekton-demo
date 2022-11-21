@@ -9,20 +9,11 @@ spec:
     - name: KO_DOCKER_REPO
       description: Registry to push the image to
       type: string
-      default: ghcr.io/chainguard-dev/tekon-demo
+      default: ghcr.io/chainguard-dev/tekton-demo
     - name: github-token-secret
       type: string
       description: name of the secret holding the github-token
       default: github-token
-    - name: REGISTRY
-      type: string
-      default: ghcr.io
-    - name: USER
-      type: string
-      default: strongjz
-    - name: COSIGN_REPOSITORY
-      type: string
-      default: ghcr.io/chainguard-dev/tekon-demo
   results:
     - name: IMAGES
       description: Digest of the image just built.
@@ -33,10 +24,6 @@ spec:
     - name: ko-build-image
       image: ghcr.io/google/ko:latest
       env:
-        - name: REGISTRY
-          value: $(params.REGISTRY)
-        - name: USER
-          value: $(params.USER)
         - name: GITHUB_TOKEN
           valueFrom:
             secretKeyRef:
@@ -46,13 +33,6 @@ spec:
           value: $(params.KO_DOCKER_REPO)
         - name: GOMODCACHE
           value: $(workspaces.source.path)/gomod
-      resources:
-        requests:
-          memory: 1Gi
-          cpu: 1
-        limits:
-          memory: 2Gi
-          cpu: 1
       script: |
         cd $(workspaces.source.path)
         ko build --bare --sbom spdx-json $(params.MAIN_DIR) --tags $(git rev-parse --short HEAD) --image-refs=ko.images 
@@ -62,48 +42,9 @@ spec:
         cat ko.images | tee /tekton/results/IMAGES
         
         cat /tekton/results/IMAGES
-#
-#    - name: cosign-attest-sbom
-#      image: ubuntu:latest
-#      script: |
-#        #!/usr/bin/env bash
-#        set -eu
-#        export IMAGE_ID=$(cat $(workspaces.source.path)/ko.images)
-#        echo "Signing SBOM for IMAGE: ${IMAGE_ID}"
-#
-#        apt update -y -qq >/dev/null 2>&1
-#        apt-get install -qq -y curl >/dev/null 2>&1
-#        curl -s -k -L https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64 -o cosign
-#        chmod +x cosign && mv cosign /usr/local/bin/cosign
-#
-#        export CR_PAT="${TEST_TOKEN}"
-#
-#
-#        cosign version
-#        echo " Cosign login"
-#        cosign login "${REGISTRY}" -u "${USER}" -p "${CR_PAT}"
-#        echo "cosign download sbom --oidc-providers-disable --output-file bom.spdx.json ${IMAGE_ID}"
-#        cosign -d download sbom --oidc-providers-disable --output-file bom.spdx.json "${IMAGE_ID}"
-#        echo "Cosign Attest"
-#        cosign -d attest -y --timeout=0 --oidc-providers-disable --force --type spdxjson --predicate bom.spdx.json "${IMAGE_ID}"
-#        echo "SBOM SIGNED!"
-#      env:
-#        - name: REGISTRY
-#          value: $(params.REGISTRY)
-#        - name: USER
-#          value: $(params.USER)
-#        - name: TEST_TOKEN
-#          valueFrom:
-#            secretKeyRef:
-#              name: $(params.github-token-secret)
-#              key: GITHUB_TOKEN
-#        - name: COSIGN_EXPERIMENTAL
-#          value: "1"
-#        - name: COSIGN_REPOSITORY
-#          value: $(params.COSIGN_REPOSITORY)
-#      volumeMounts:
-#        - name: oidc-info
-#          mountPath: /var/run/sigstore/cosign
+      volumeMounts:
+        - name: oidc-info
+          mountPath: /var/run/sigstore/cosign
   volumes:
     - name: oidc-info
       projected:

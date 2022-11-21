@@ -6,7 +6,7 @@ spec:
   params:
     - name: REGISTRY
       type: string
-      default: gchr.io
+      default: ghcr.io
     - name: USER
       type: string
       default: strongjz
@@ -62,6 +62,20 @@ spec:
         - name: MAIN_DIR
           value: $(params.MAIN_DIR)
 
+    - name: sbom-sign
+      taskRef:
+        name: sbom-sign
+      runAfter:
+        - source-to-image
+      params:
+        - name: KO_DOCKER_REPO
+          value: $(params.KO_DOCKER_REPO)
+        - name: IMAGE_ID
+          value: $(tasks.source-to-image.results.IMAGES)
+        - name: USER
+          value: $(params.USER)
+        - name: REGISTRY
+          value: $(params.REGISTRY)
 #    - name: trivy-scan
 #      taskRef:
 #        name: scan-trivy
