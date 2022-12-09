@@ -93,13 +93,13 @@ resource "google_compute_firewall" "master-webhooks" {
   depends_on = [module.cluster]
 }
 
-// Cluster policies setup.
-module "policy_bindings" {
-  source = "git::https://github.com/sigstore/scaffolding.git//terraform/gcp/modules/policy_bindings?ref=b5aaa001b1705c9d8c954773ca64dbf35dc6b807"
-
-  region     = var.region
-  project_id = var.project_id
-
-  cluster_name = var.cluster_name
-  github_repo  = var.github_repo
-}
+#// Cluster policies setup.
+#module "policy_bindings" {
+#  source = "git::https://github.com/sigstore/scaffolding.git//terraform/gcp/modules/policy_bindings?ref=b5aaa001b1705c9d8c954773ca64dbf35dc6b807"
+#
+#  region     = var.region
+#  project_id = var.project_id
+#
+#  cluster_name = var.cluster_name
+#  github_repo  = var.github_repo
+#}

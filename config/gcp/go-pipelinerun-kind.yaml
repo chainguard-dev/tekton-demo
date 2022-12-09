@@ -16,7 +16,7 @@ metadata:
   name: go-dependencies-storage
 spec:
   resources:
-    requests:
+    requests:2
       storage: 2Gi
   volumeMode: Filesystem
   accessModes:

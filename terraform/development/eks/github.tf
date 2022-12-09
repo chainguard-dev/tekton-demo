@@ -22,7 +22,7 @@ variable "GITHUB_URL" {
 #  program = ["bash", "./thumbprint.sh", var.GITHUB_URL]
 #}
 
-data "aws_iam_openid_connect_provider" "github"{
+data "aws_iam_openid_connect_provider" "github" {
   url = "https://${var.GITHUB_URL}"
 }
 # Role for github

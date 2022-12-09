@@ -36,14 +36,15 @@ resource "google_project_service" "service" {
 
 // CLUSTER KMS
 resource "google_kms_key_ring" "cluster_db_encryption_keyring" {
-  name       = var.cluster_db_encryption_keyring
+  name       = "${var.cluster_db_encryption_keyring}-${var.cluster_name}"
   location   = var.region
   project    = var.project_id
   depends_on = [google_project_service.service]
 }
 
 resource "google_kms_crypto_key" "cluster_db_encryption_key" {
-  name     = var.cluster_db_encryption_key
+  name = "${var.cluster_db_encryption_key}-${var.cluster_name}"
+
   key_ring = google_kms_key_ring.cluster_db_encryption_keyring.id
   purpose  = "ENCRYPT_DECRYPT"
   version_template {
@@ -65,7 +66,6 @@ resource "google_project_iam_member" "iam_kms_encryption" {
 
 
 // GKE CLUSTER
-
 resource "google_container_cluster" "cluster" {
   # This is where to enable Dataplane v2.
   datapath_provider = var.datapath_provider
