@@ -61,18 +61,3 @@ spec:
           value: $(params.KO_DOCKER_REPO)
         - name: MAIN_DIR
           value: $(params.MAIN_DIR)
-
-#    - name: trivy-scan
-#      taskRef:
-#        name: scan-trivy
-#      runAfter:
-#        - source-to-image
-#      params:
-#        - name: digest
-#          value: $(tasks.source-to-image.results.IMAGES)
-#        - name: REKOR_ENDPOINT
-#          value: $(params.REKOR_ENDPOINT)
-#        - name: FULCIO_ENDPOINT
-#          value: $(params.FULCIO_ENDPOINT)
-#        - name: COSIGN_REPOSITORY
-#          value: $(params.COSIGN_REPOSITORY)
