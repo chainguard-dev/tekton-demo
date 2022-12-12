@@ -5,36 +5,17 @@ export GITHUB_TOKEN="${GITHUB_TOKEN}"
 export GITHUB_EMAIL="${GITHUB_EMAIL}"
 
 
-kubectl delete secret ghcr-secret || true
-
-cat > secret.yaml << EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ghcr-secret
-  annotations:
-    tekton.dev/git-0: https://github.com
-    tekton.dev/docker-0: https://ghcr.io
-type: kubernetes.io/basic-auth
-stringData:
-  username: "${GITHUB_EMAIL}"
-  password: "${GITHUB_TOKEN}"
-EOF
+# KO and tekton-chains needs Github Token for upload
+kubectl delete secrete github-token || true
+kubectl create secret generic github-token --from-literal=GITHUB_TOKEN="${GITHUB_TOKEN}"
 
 kubectl delete secret regcred || true
-
-kubectl create secret docker-registry regcred \
+kubectl create secret docker-registry registry-credentials \
   --docker-server="ghcr.io" \
   --docker-username="${GIT_USER}" \
   --docker-password="${GITHUB_TOKEN}" \
   --docker-email="${GITHUB_EMAIL}"
 
-kubectl apply -f secret.yaml -n default
-
 kubectl patch serviceaccount default \
-  -p "{\"imagePullSecrets\": [{\"name\": \"ghcr-secret\"},{\"name\": \"regcred\"}]}" -n default
+  -p "{\"imagePullSecrets\": [{\"name\": \"registry-credentials\"}]}" -n default
 
-kubectl patch serviceaccount build-bot \
-  -p "{\"imagePullSecrets\": [{\"name\": \"ghcr-secret\"}]}" -n default
-
-rm secret.yaml

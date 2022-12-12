@@ -1,1 +1,1 @@
-defaultBaseImage: cgr.dev/chainguard/alpine-base@sha256:a18fa9705203b2623082947200ef313f4cd2269007d22c64b2abd6a1846b6451
+defaultBaseImage: cgr.dev/chainguard/alpine-base@sha256:4ae1bbb7f158d0ed4997051456369d9d10d08aeb725d601090f70c4efe7cfc35
