@@ -321,7 +321,9 @@ spec:
 1. Update Kubeconfig with AWS EKS credentials `aws eks update-kubeconfig --name tekton-demo-pov`
 2. Install Enforce with Chainctl `chainctl cluster install --group tekton-demo --name tekton-demo-pov --description "Tekton Demo for Live Stream"`
 3. Create Policy `chainctl policy apply -f policy/signing.yaml`
-4. Deploy Images that match policy
+4. Deploy Images that match policy `kubectl create deployment --image ghcr.io/chainguard-dev/tekton-demo:da09cbd`
+5. Enable enforcement 
+6. Test policy enforcement 
 
 
 Cluster Install 
@@ -544,3 +546,35 @@ chainctl cluster records list tekton-demo-pov
                                                                                   |                                              | Unknown:2   |            |          |           |             
 ```
 
+Policy Enforcement is not enabled, so we can still deploy images that match policy but fail 
+
+```bash
+kubectl create deployment nginx --image=nginx
+```
+
+We now want to enforce this policy requirement. We can use kubectl and namespace label selectors to achieve this.
+
+```bash
+ chainctl cluster records list tekton-demo-pov
+                                       IMAGE                                      |                  POLICIES                  |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
+----------------------------------------------------------------------------------+--------------------------------------------+-------------+------------+----------+-----------+-----------------
+  index.docker.io/library/nginx@sha256:ab589a…                                    | keyless-attestation-update:fail:11s        | Pod:1       |            |          | 67s       |                 
+                                                                                  | keyless-attestation-sbom:fail:12s          |             |            |          |           |                 
+```
+
+
+```bash
+kubectl label ns default policy.sigstore.dev/include=true --overwrite
+namespace/default labeled
+```
+
+Now with Policy enforcement in place the same container image deployment will fail 
+
+```bash
+kubectl create deployment nginx-fail --image=nginx
+error: failed to create deployment: admission webhook "enforcer.chainguard.dev" denied the request: validation failed: failed policy: keyless-attestation-sbom: spec.template.spec.containers[0].image
+index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db attestation keyless validation failed for authority keyless-sbom for index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db: no matching attestations:
+
+failed policy: keyless-attestation-update: spec.template.spec.containers[0].image
+index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db signature keyless validation failed for authority keyless for index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db: no matching signatures:
+``` 
