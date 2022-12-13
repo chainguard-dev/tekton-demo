@@ -161,10 +161,10 @@ https://github.com/chainguard-dev/tekton-demo/pull/7/checks?check_run_id=1004671
 
 ```bash
 export IMAGE_ID=ghcr.io/chainguard-dev/tekton-demo:da09cbd@sha256:aaa82ba50684376426cdf84ebfeea34ea4e8fdb1191574b800559ab027f9e24d
-[strongjz@hulk-linux tekton-demo]$ cosign attest --file <(gitsign show) $IMAGE_ID
-Error: unknown flag: --file
-main.go:62: error during command execution: unknown flag: --file
-[strongjz@hulk-linux tekton-demo]$ cosign attest --predicate <(gitsign show) $IMAGE_ID
+cosign attest --predicate <(gitsign show) $IMAGE_ID
+```
+
+```bash
 Generating ephemeral keys...
 Retrieving signed certificate...
 
@@ -286,6 +286,8 @@ Policies and Clusters are tied to groups, below is the group for the demo named 
 
 ```bash
 chainctl iam group describe tekton-demo
+```
+```bash
 Id: d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef
 Name: tekton-demo
 Hierarchy:
@@ -329,6 +331,8 @@ spec:
 Cluster Install 
 ```bash
 chainctl cluster install --group tekton-demo --name tekton-demo-pov --description "Tekton Demo for Live Stream"
+```
+```bash
 
 Installing cluster in group tekton-demo (d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef).
                                                                                 
@@ -356,6 +360,8 @@ Policy Install
 
 ```bash
 chainctl policy apply -f policy/signing.yaml --group tekton-demo
+```
+```bash
                                       ID                                     |            NAME            | DESCRIPTION  
 -----------------------------------------------------------------------------+----------------------------+--------------
   d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/7027e542b3e177c7 | keyless-attestation-update |   
@@ -363,6 +369,8 @@ chainctl policy apply -f policy/signing.yaml --group tekton-demo
 
 ```bash
 chainctl policy view d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/7027e542b3e177c7
+```
+```bash
 # Policy keyless-attestation-update [d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/7027e542b3e177c7]
 apiVersion: policy.sigstore.dev/v1alpha1
 kind: ClusterImagePolicy
@@ -397,6 +405,8 @@ We can see that the Container image matches the policy is passing the policy req
 
 ```bash
 chainctl cluster records list tekton-demo-pov
+```
+```bash
                                        IMAGE                                      |              POLICIES              |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
 ----------------------------------------------------------------------------------+------------------------------------+-------------+------------+----------+-----------+-----------------                 
   ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-update:pass:4s | Pod:1       | parents:1  | golang:1 | 9m33s     | sbom:4s         
@@ -439,6 +449,8 @@ We can see the failing policy now in the chainctl cluster record output
 
 ```bash
 chainctl cluster records list tekton-demo-pov
+```
+```bash
                                        IMAGE                                      |                  POLICIES                  |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
 ----------------------------------------------------------------------------------+--------------------------------------------+-------------+------------+----------+-----------+-----------------
   ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-sbom-spdxjson:fail:11s | Pod:1       | parents:1  | golang:1 | 13m       | sbom:11s        
@@ -476,7 +488,9 @@ cosign download sbom ghcr.io/chainguard-dev/tekton-demo:da09cbd --output-file sb
 Create and sign the attestation with cosign 
 
 ```bash
- cosign attest --predicate sbom.json --type spdxjson ghcr.io/chainguard-dev/tekton-demo:da09cbd
+cosign attest --predicate sbom.json --type spdxjson ghcr.io/chainguard-dev/tekton-demo:da09cbd
+```
+```bash
 Generating ephemeral keys...
 Retrieving signed certificate...
 
@@ -518,6 +532,8 @@ You can read more about Continuous Verification on our [Academy Portal](https://
 
 ```bash
 chainctl cluster records list tekton-demo-pov
+```
+```bash
                                        IMAGE                                      |                   POLICIES                   |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
 ----------------------------------------------------------------------------------+----------------------------------------------+-------------+------------+----------+-----------+-----------------                 
   ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-sbom:pass:7s             | Pod:1       | parents:1  | golang:1 | 22m       | sbom:7s         
@@ -556,6 +572,8 @@ We now want to enforce this policy requirement. We can use kubectl and namespace
 
 ```bash
  chainctl cluster records list tekton-demo-pov
+ ```
+```bash
                                        IMAGE                                      |                  POLICIES                  |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
 ----------------------------------------------------------------------------------+--------------------------------------------+-------------+------------+----------+-----------+-----------------
   index.docker.io/library/nginx@sha256:ab589a…                                    | keyless-attestation-update:fail:11s        | Pod:1       |            |          | 67s       |                 
@@ -565,6 +583,8 @@ We now want to enforce this policy requirement. We can use kubectl and namespace
 
 ```bash
 kubectl label ns default policy.sigstore.dev/include=true --overwrite
+```
+```bash
 namespace/default labeled
 ```
 
@@ -572,9 +592,129 @@ Now with Policy enforcement in place the same container image deployment will fa
 
 ```bash
 kubectl create deployment nginx-fail --image=nginx
+```
+```bash
 error: failed to create deployment: admission webhook "enforcer.chainguard.dev" denied the request: validation failed: failed policy: keyless-attestation-sbom: spec.template.spec.containers[0].image
 index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db attestation keyless validation failed for authority keyless-sbom for index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db: no matching attestations:
 
 failed policy: keyless-attestation-update: spec.template.spec.containers[0].image
 index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db signature keyless validation failed for authority keyless for index.docker.io/library/nginx@sha256:ab589a3c466e347b1c0573be23356676df90cd7ce2dbf6ec332a5f0a8b5e59db: no matching signatures:
 ``` 
+
+
+Enforcing Git signed commits 
+
+Now that we have policy enforcement enabled we can also add the Git sign policy, that requires a signed attestation from Git sign 
+
+```yaml
+apiVersion: policy.sigstore.dev/v1alpha1
+kind: ClusterImagePolicy
+metadata:
+  name: keyless-attestation-gitsign-update
+spec:
+  images:
+    - glob: ghcr.io/chainguard-dev/*
+    - glob: index.docker.io/library/*
+  authorities:
+    - name: keyless
+      keyless:
+        url: "https://fulcio.sigstore.dev"
+        identities:
+          - issuer: https://container.googleapis.com/v1/projects/customer-engineering-357819/locations/us-central1-a/clusters/tekton-demo
+            subject: https://kubernetes.io/namespaces/tekton-chains/serviceaccounts/tekton-chains-controller
+          - issuer: https://accounts.google.com
+            subjectRegExp: .+@chainguard.dev$
+      attestations:
+        - name: must-have-gitsign
+          predicateType: custom
+          policy:
+            type: cue
+            data: |
+              import (
+                "encoding/json"
+                "strings"
+              )
+              #Predicate: {
+                Data: string
+                Timestamp: string
+                ...
+              }
+              predicate: #Predicate & {
+                Data: string
+                jsonData: {...} & json.Unmarshal(Data) & {
+                 predicateType: "gitsign.sigstore.dev/predicate/git/v0.1"
+                }
+              }
+```
+
+Deploy the Git sign policy 
+
+```bash
+chainctl policy apply -f policy/gitsign.yml --group tekton-demo
+```
+```bash
+ID                                     |                NAME                | DESCRIPTION  
+-----------------------------------------------------------------------------+------------------------------------+--------------
+d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/c0bb07e446c7135a | keyless-attestation-gitsign-update |
+```
+
+Create the signed attestation with cosign and the output form gitsign show
+
+```bash
+cosign attest --type custom --predicate <(gitsign show) ghcr.io/chainguard-dev/tekton-demo:da09cbd
+```
+```bash
+Generating ephemeral keys...
+Retrieving signed certificate...
+
+        Note that there may be personally identifiable information associated with this signed artifact.
+        This may include the email address associated with the account with which you authenticate.
+        This information will be used for signing this artifact and will be stored in public transparency logs and cannot be removed later.
+        By typing 'y', you attest that you grant (or have permission to grant) and agree to have this information stored permanently in transparency logs.
+
+Are you sure you want to continue? (y/[N]): y
+Your browser will now be opened to:
+https://oauth2.sigstore.dev/auth/auth?access_type=online&client_id=sigstore&code_challenge=3_3nIDVtipu4iWrfC0qm46oCY7GHwwxbudfWtGBKjKg&code_challenge_method=S256&nonce=2IsHI48G3S5sZcUORFUz5n92D4O&redirect_uri=http%3A%2F%2Flocalhost%3A46243%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=2IsHI9MJ7PIYxmmgzhnaPXJ7Ahm
+Successfully verified SCT...
+Using payload from: /dev/fd/63
+using ephemeral certificate:
+-----BEGIN CERTIFICATE-----
+MIICqDCCAi2gAwIBAgIUDtvWIJ7IZxFvAgMU/W+2m+Y3WPswCgYIKoZIzj0EAwMw
+NzEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MR4wHAYDVQQDExVzaWdzdG9yZS1pbnRl
+cm1lZGlhdGUwHhcNMjIxMjEzMjAyODEyWhcNMjIxMjEzMjAzODEyWjAAMFkwEwYH
+KoZIzj0CAQYIKoZIzj0DAQcDQgAErTavRxp0G49931byOSvTxATtYurEza2TgZjN
+xNYfWkZcFaPquaeJUGxTUYDjdHpB9QhBRKSVgDRS4UXKbZgtkqOCAUwwggFIMA4G
+A1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDAzAdBgNVHQ4EFgQUlbu4
+BzddsZQ/lkSPYYbZxsrfjiowHwYDVR0jBBgwFoAU39Ppz1YkEZb5qNjpKFWixi4Y
+ZD8wKQYDVR0RAQH/BB8wHYEbamFtZXMuc3Ryb25nQGNoYWluZ3VhcmQuZGV2MCkG
+CisGAQQBg78wAQEEG2h0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbTCBigYKKwYB
+BAHWeQIEAgR8BHoAeAB2AN09MGrGxxEyYxkeHJlnNwKiSl643jyt/4eKcoAvKe6O
+AAABhQ0saDoAAAQDAEcwRQIgdGMvV8cUI0HVNFK/g/WcbPX7gJt6BI1fcEBjbTxH
+2AECIQDW74oXXtK1Gt8m04qadl5FHcYLNjRQ8XxZ1cIPEc4UvDAKBggqhkjOPQQD
+AwNpADBmAjEAkNsZysvMpIqNPd1Bp6ueOO6CKx1E54nvo7OpwQGxvtNHd7cmIvtG
+DvhndQvCUl8NAjEA568AOuTKWZKZITo9NHdMjdmQD/OWK/lxLigrtMKzgtKG8wU2
+clKQB3xBjqw6Y4Ep
+-----END CERTIFICATE-----
+
+tlog entry created with index: 9027349
+```
+
+You can see that the policy applies to both the chainguard image and the nginx image. 
+
+Nginx is failing and since we created the attestation in the previous step, it is passing for the tekton-demo 
+
+```bash
+chainctl cluster records list tekton-demo-pov
+```
+
+```bash
+                                       IMAGE                                      |                  POLICIES                   |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
+----------------------------------------------------------------------------------+---------------------------------------------+-------------+------------+----------+-----------+-----------------
+  index.docker.io/library/nginx@sha256:ab589a…                                    | keyless-attestation-gitsign-update:fail:27s | Pod:1       |            |          | 9m30s     |                 
+                                                                                  | keyless-attestation-update:fail:8m35s       |             |            |          |           |                 
+                                                                                  | keyless-attestation-sbom:fail:8m35s         |             |            |          |           |                 
+  ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-gitsign-update:pass:31s | Pod:1       | parents:1  | golang:1 | 46m       | custom:31s      
+                                                                                  | keyless-attestation-sbom:pass:24m           |             |            | oci:1    |           | sbom:31s        
+                                                                                  | keyless-attestation-update:pass:30m         |             |            |          |           | sig:30m         
+                                                                                  | keyless-attestation-sbom-spdxjson:fail:30m  |             |            |          |           | spdxjson:24m    
+```
