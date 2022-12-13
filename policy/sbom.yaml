@@ -1,18 +1,17 @@
 apiVersion: policy.sigstore.dev/v1alpha1
 kind: ClusterImagePolicy
 metadata:
-  name: keyless-attestation-sbom-spdxjson
+  name: keyless-attestation-sbom
 spec:
   images:
     - glob: ghcr.io/chainguard-dev/*
-    - glob: cgr.dev/chainguard/*
     - glob: index.docker.io/library/*
   authorities:
     - name: keyless-sbom
       keyless:
         url: "https://fulcio.sigstore.dev"
         identities:
-          - issuer: https://container.googleapis.com/v1/projects/customer-engineering-357819/locations/us-central1-a/clusters/tekton-dev
+          - issuer: https://container.googleapis.com/v1/projects/customer-engineering-357819/locations/us-central1-a/clusters/tekton-demo
             subject: https://kubernetes.io/namespaces/tekton-chains/serviceaccounts/tekton-chains-controller
           - issuer: https://accounts.google.com
             subjectRegExp: .+@chainguard.dev$

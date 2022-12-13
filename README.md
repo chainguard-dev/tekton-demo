@@ -38,13 +38,13 @@ You are now ready for the Demos.
 
 1. [chainctl](https://edu.chainguard.dev/chainguard/chainguard-enforce/how-to-install-chainctl/)
 2. [terraform](https://developer.hashicorp.com/terraform/downloads)
-2. [gcloud cli](https://cloud.google.com/sdk/docs/install)
-3. [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-4. [cosign](https://docs.sigstore.dev/cosign/installation/)
-5. [gitsign](https://docs.sigstore.dev/gitsign/installation/)
-6. [tkn - tekton cli](https://github.com/tektoncd/cli#installing-tkn)
-7. [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
-8. [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+3. [gcloud cli](https://cloud.google.com/sdk/docs/install)
+4. [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+5. [cosign](https://docs.sigstore.dev/cosign/installation/)
+6. [gitsign](https://docs.sigstore.dev/gitsign/installation/)
+7. [tkn - tekton cli](https://github.com/tektoncd/cli#installing-tkn)
+8. [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+9. [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 
 Others that our helpful not necessary 
 
@@ -276,7 +276,25 @@ spec:
 
 ### Demo #3 Enforce for Kubernetes 
 
-Cluster Image Policy requiring a signed container 
+
+Install of Chainguard Enforce for Kubernetes is available in our 
+[Chainguard Academy documentation](https://edu.chainguard.dev/chainguard/chainguard-enforce/chainguard-enforce-kubernetes/how-to-connect-kubernetes-clusters/)
+
+The console is available at console.enforce.dev , we also have a CLI tool for interacting with Chainguard Enforce for Kubernetes, [chainctl](https://edu.chainguard.dev/chainguard/chainguard-enforce/chainctl-docs/)
+
+Policies and Clusters are tied to groups, below is the group for the demo named tekton-demo. 
+
+```bash
+chainctl iam group describe tekton-demo
+Id: d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef
+Name: tekton-demo
+Hierarchy:
+[customers-aws-root-group]
+└ [tekton-demo]
+```
+
+Here is the Cluster Image Policy requiring a signed container with the Identity of
+either our Tekton Build pipeline or a Chainguard Google account
 
 ```yaml
 apiVersion: policy.sigstore.dev/v1alpha1
@@ -297,5 +315,232 @@ spec:
             subject: https://kubernetes.io/namespaces/tekton-chains/serviceaccounts/tekton-chains-controller
           - issuer: https://accounts.google.com
             subjectRegExp: .+@chainguard.dev$
+```
+
+
+1. Update Kubeconfig with AWS EKS credentials `aws eks update-kubeconfig --name tekton-demo-pov`
+2. Install Enforce with Chainctl `chainctl cluster install --group tekton-demo --name tekton-demo-pov --description "Tekton Demo for Live Stream"`
+3. Create Policy `chainctl policy apply -f policy/signing.yaml`
+4. Deploy Images that match policy
+
+
+Cluster Install 
+```bash
+chainctl cluster install --group tekton-demo --name tekton-demo-pov --description "Tekton Demo for Live Stream"
+
+Installing cluster in group tekton-demo (d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef).
+                                                                                
+    Selected Cluster arn:aws:eks:us-east-1:1234567890:cluster/tekton-demo-pov.
+                                                                                
+Installing Chainguard agent...
+Generating temporary invite code...
+Configuring agent credentials...
+Waiting for Chainguard agent to be ready...
+Checking the webhook is available.
+Programming the Chainguard agent...
+Cluster has been successfully configured with ID: b69c4c24-cd29-4573-86a0-3205fb82d8e2
+Cleaning up temporary invite code d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/ebdded177d9e70de...
+```
+
+```bash 
+chainctl cluster list --group tekton-demo
+NAME       |    GROUP    |               REMOTEID               | REGISTERED |     K8S VERSION      | AGENT VERSION | LAST SEEN |   ACTIVITY    
+------------------+-------------+--------------------------------------+------------+----------------------+---------------+-----------+---------------
+tekton-demo-pov | tekton-demo | b69c4c24-cd29-4573-86a0-3205fb82d8e2 |       5m6s | v1.23.13-eks-fb459a0 |       badf10d |       32s | enforcer:32s  
+|             |                                      |            |                      |               |           | observer:35s
+```
+
+Policy Install 
+
+```bash
+chainctl policy apply -f policy/signing.yaml --group tekton-demo
+                                      ID                                     |            NAME            | DESCRIPTION  
+-----------------------------------------------------------------------------+----------------------------+--------------
+  d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/7027e542b3e177c7 | keyless-attestation-update |   
+```
+
+```bash
+chainctl policy view d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/7027e542b3e177c7
+# Policy keyless-attestation-update [d3a4a2b6f25b36c57eed2b7732fd1bfe7ff6d2b7/5b5a2c59dd2663ef/7027e542b3e177c7]
+apiVersion: policy.sigstore.dev/v1alpha1
+kind: ClusterImagePolicy
+metadata:
+  name: keyless-attestation-update
+spec:
+  images:
+    - glob: ghcr.io/chainguard-dev/*
+    - glob: cgr.dev/chainguard/*
+    - glob: index.docker.io/library/*
+  authorities:
+    - name: keyless
+      keyless:
+        url: "https://fulcio.sigstore.dev"
+        identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subject: https://github.com/chainguard-images/images/.github/workflows/release.yaml@refs/heads/main
+          - issuer: https://container.googleapis.com/v1/projects/customer-engineering-357819/locations/us-central1-a/clusters/tekton-demo
+            subject: https://kubernetes.io/namespaces/tekton-chains/serviceaccounts/tekton-chains-controller
+          - issuer: https://accounts.google.com
+            subjectRegExp: .+@chainguard.dev$
+```
+
+Deploy an image that matches Policy 
+
+```bash
+kubectl create deployment --image ghcr.io/chainguard-dev/tekton-demo:da09cbd
+deployment.apps/tekton-demo created
+```
+
+We can see that the Container image matches the policy is passing the policy requirements 
+
+```bash
+chainctl cluster records list tekton-demo-pov
+                                       IMAGE                                      |              POLICIES              |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
+----------------------------------------------------------------------------------+------------------------------------+-------------+------------+----------+-----------+-----------------                 
+  ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-update:pass:4s | Pod:1       | parents:1  | golang:1 | 9m33s     | sbom:4s         
+                                                                                  |                                    |             |            | oci:1    |           | sig:4s          
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni-init@sha256:27aebe… |                                    | Pod:3       |            |          | 13m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni@sha256:19dacc…      |                                    | Pod:3       |            |          | 13m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/eks/coredns@sha256:e6a38c…         |                                    | Pod:2       |            |          | 13m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy@sha256:699b73…      |                                    | Pod:3       |            |          | 13m       |                 
+  quay.io/cilium/cilium:v1.12.1@sha256:ea2db1…                                    |                                    | DaemonSet:1 |            |          | 13m       |                 
+  quay.io/cilium/cilium@sha256:ea2db1…                                            |                                    | Pod:3       |            |          | 13m       |                 
+  quay.io/cilium/hubble-relay:v1.12.1@sha256:646582…                              |                                    | Unknown:2   |            |          | 13m       |                 
+  quay.io/cilium/hubble-relay@sha256:646582…                                      |                                    | Pod:1       |            |          | 13m       |                 
+  quay.io/cilium/hubble-ui-backend:v0.9.1@sha256:c4b86e…                          |                                    | Unknown:2   |            |          | 13m       |                 
+  quay.io/cilium/hubble-ui-backend@sha256:c4b86e…                                 |                                    | Unknown:1   |            |          | 13m       |                 
+  quay.io/cilium/hubble-ui:v0.9.1@sha256:baff61…                                  |                                    | Unknown:2   |            |          | 13m       |                 
+  quay.io/cilium/hubble-ui@sha256:baff61…                                         |                                    | Unknown:1   |            |          | 13m       |                 
+  quay.io/cilium/operator-aws:v1.12.1@sha256:cbd071…                              |                                    | Unknown:2   |            |          | 13m       |                 
+  quay.io/cilium/operator-aws@sha256:cbd071…                                      |                                    | Pod:2       |            |          | 13m       |                 
+  quay.io/cilium/startup-script@sha256:0862c6…                                    |                                    | Pod:1       |            |          | 13m       |                 
+                                                                                  |                                    | Unknown:2   |            |          |           |                 
+  registry.k8s.io/ingress-nginx/controller-chroot:v1.5.1@sha256:c1c091…           |                                    | Unknown:2   |            |          | 13m       |                 
+  registry.k8s.io/ingress-nginx/controller-chroot@sha256:c1c091…                  |                                    | Pod:1       |            |          | 13m       |                 
+  us.gcr.io/prod-enforce-fabc/chainctl@sha256:86131b…                             |                                    | Pod:1       |            |          | 13m       |                 
+                                                                                  |                                    | Unknown:2   |            |          |           |                 
+  us.gcr.io/prod-enforce-fabc/controlplane@sha256:825856…                         |                                    | Pod:1       |            |          | 13m       |                 
+                                                                                  |                                    | Unknown:2   |            |          |           |                 
+```
+
+Now Lets require a Sign SBOM attestation. 
+
+1. Deploy the policy
+2. Explore the failing policy
+3. Remediate the policy
+
+```bash
+chainctl policy apply -f policy/sbom.yaml --group tekton-demo
+```
+
+We can see the failing policy now in the chainctl cluster record output 
+
+```bash
+chainctl cluster records list tekton-demo-pov
+                                       IMAGE                                      |                  POLICIES                  |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
+----------------------------------------------------------------------------------+--------------------------------------------+-------------+------------+----------+-----------+-----------------
+  ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-sbom-spdxjson:fail:11s | Pod:1       | parents:1  | golang:1 | 13m       | sbom:11s        
+                                                                                  | keyless-attestation-update:pass:4m24s      |             |            | oci:1    |           | sig:4m24s       
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni-init@sha256:27aebe… |                                            | Pod:3       |            |          | 17m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni@sha256:19dacc…      |                                            | Pod:3       |            |          | 17m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/eks/coredns@sha256:e6a38c…         |                                            | Pod:2       |            |          | 17m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy@sha256:699b73…      |                                            | Pod:3       |            |          | 17m       |                 
+  quay.io/cilium/cilium:v1.12.1@sha256:ea2db1…                                    |                                            | DaemonSet:1 |            |          | 17m       |                 
+  quay.io/cilium/cilium@sha256:ea2db1…                                            |                                            | Pod:3       |            |          | 17m       |                 
+  quay.io/cilium/hubble-relay:v1.12.1@sha256:646582…                              |                                            | Unknown:2   |            |          | 17m       |                 
+  quay.io/cilium/hubble-relay@sha256:646582…                                      |                                            | Pod:1       |            |          | 17m       |                 
+  quay.io/cilium/hubble-ui-backend:v0.9.1@sha256:c4b86e…                          |                                            | Unknown:2   |            |          | 17m       |                 
+  quay.io/cilium/hubble-ui-backend@sha256:c4b86e…                                 |                                            | Unknown:1   |            |          | 17m       |                 
+  quay.io/cilium/hubble-ui:v0.9.1@sha256:baff61…                                  |                                            | Unknown:2   |            |          | 17m       |                 
+  quay.io/cilium/hubble-ui@sha256:baff61…                                         |                                            | Unknown:1   |            |          | 17m       |                 
+  quay.io/cilium/operator-aws:v1.12.1@sha256:cbd071…                              |                                            | Unknown:2   |            |          | 17m       |                 
+  quay.io/cilium/operator-aws@sha256:cbd071…                                      |                                            | Pod:2       |            |          | 17m       |                 
+  quay.io/cilium/startup-script@sha256:0862c6…                                    |                                            | Pod:1       |            |          | 17m       |                 
+                                                                                  |                                            | Unknown:2   |            |          |           |                 
+  registry.k8s.io/ingress-nginx/controller-chroot:v1.5.1@sha256:c1c091…           |                                            | Unknown:2   |            |          | 17m       |                 
+  registry.k8s.io/ingress-nginx/controller-chroot@sha256:c1c091…                  |                                            | Pod:1       |            |          | 17m       |                 
+  us.gcr.io/prod-enforce-fabc/chainctl@sha256:86131b…                             |                                            | Pod:1       |            |          | 17m       |                 
+                                                                                  |                                            | Unknown:2   |            |          |           |                 
+  us.gcr.io/prod-enforce-fabc/controlplane@sha256:825856…                         |                                            | Pod:1       |            |          | 17m       |                 
+                                                                                  |                                            | Unknown:2   |            |          |           |                 
+```
+
+Download the SBOM from the registry that was created by ko in the tekton pipeline 
+
+```bash
+cosign download sbom ghcr.io/chainguard-dev/tekton-demo:da09cbd --output-file sbom.json
+```
+
+Create and sign the attestation with cosign 
+
+```bash
+ cosign attest --predicate sbom.json --type spdxjson ghcr.io/chainguard-dev/tekton-demo:da09cbd
+Generating ephemeral keys...
+Retrieving signed certificate...
+
+        Note that there may be personally identifiable information associated with this signed artifact.
+        This may include the email address associated with the account with which you authenticate.
+        This information will be used for signing this artifact and will be stored in public transparency logs and cannot be removed later.
+        By typing 'y', you attest that you grant (or have permission to grant) and agree to have this information stored permanently in transparency logs.
+
+Are you sure you want to continue? (y/[N]): y
+Your browser will now be opened to:
+https://oauth2.sigstore.dev/auth/auth?access_type=online&client_id=sigstore&code_challenge=k6RVkl9dkiA1QTJliSOMxlagVNDVaivVyM_l0g84Ims&code_challenge_method=S256&nonce=2IsECjRYPGlbm9vT3i10w8LQLFT&redirect_uri=http%3A%2F%2Flocalhost%3A39225%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=2IsECgwifqsBWY0D8uByWJ9Q9Pl
+Successfully verified SCT...
+Using payload from: sbom.json
+using ephemeral certificate:
+-----BEGIN CERTIFICATE-----
+MIICpzCCAi2gAwIBAgIUDCFrAdkXXwjHOhJ46tDnZ0xaOXswCgYIKoZIzj0EAwMw
+NzEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MR4wHAYDVQQDExVzaWdzdG9yZS1pbnRl
+cm1lZGlhdGUwHhcNMjIxMjEzMjAwMjQ5WhcNMjIxMjEzMjAxMjQ5WjAAMFkwEwYH
+KoZIzj0CAQYIKoZIzj0DAQcDQgAEIQI8mb7wkHUuKCY/0hNkcwy1Q4cju6ElB3Mb
+QmACRFjWGQR/jzzuW4hcEyk4qZvos4E4fKks/KzB8kefIynj9KOCAUwwggFIMA4G
+A1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDAzAdBgNVHQ4EFgQUQ6il
+1+4WQNmvK31cw2vh+L6XI1wwHwYDVR0jBBgwFoAU39Ppz1YkEZb5qNjpKFWixi4Y
+ZD8wKQYDVR0RAQH/BB8wHYEbamFtZXMuc3Ryb25nQGNoYWluZ3VhcmQuZGV2MCkG
+CisGAQQBg78wAQEEG2h0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbTCBigYKKwYB
+BAHWeQIEAgR8BHoAeAB2AN09MGrGxxEyYxkeHJlnNwKiSl643jyt/4eKcoAvKe6O
+AAABhQ0VK2EAAAQDAEcwRQIhAIMl6P751P8lDuQP6aOQoWIuAKdtJUltKLgI28jX
+OLx+AiB2BM7Bw1UbQfQZ3zOHKiCuy0egvjL6KLQbXhKuk55f3DAKBggqhkjOPQQD
+AwNoADBlAjEAkmgqtLSu+u9jmwy6LHSIv5fkcvOZCv3P4SxEk/kcXgmFP9UWQA9h
+AqUrTd7Lv0DFAjAPeBNeksffPLqvKjUmvFmtKIFM/jYiUCZs43swyjmwtFZMf6PQ
+FVRm71aC1w03aXM=
+-----END CERTIFICATE-----
+
+tlog entry created with index: 9026108
+```
+
+The continuous verification of Chainguard Enforce for Kubernetes will rescan repositories every 10 minutes, we can update the policy to force a rescan.
+
+You can read more about Continuous Verification on our [Academy Portal](https://edu.chainguard.dev/chainguard/chainguard-enforce/chainguard-enforce-kubernetes/understanding-continuous-verification/)
+
+```bash
+chainctl cluster records list tekton-demo-pov
+                                       IMAGE                                      |                   POLICIES                   |  WORKLOADS  |  ANCESTRY  | PACKAGES | LAST SEEN | LAST REFRESHED  
+----------------------------------------------------------------------------------+----------------------------------------------+-------------+------------+----------+-----------+-----------------                 
+  ghcr.io/chainguard-dev/tekton-demo@sha256:aaa82b…                               | keyless-attestation-sbom:pass:7s             | Pod:1       | parents:1  | golang:1 | 22m       | sbom:7s         
+                                                                                  | keyless-attestation-update:pass:6m14s        |             |            | oci:1    |           | sig:6m14s           
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni-init@sha256:27aebe… |                                              | Pod:3       |            |          | 26m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni@sha256:19dacc…      |                                              | Pod:3       |            |          | 26m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/eks/coredns@sha256:e6a38c…         |                                              | Pod:2       |            |          | 26m       |                 
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy@sha256:699b73…      |                                              | Pod:3       |            |          | 26m       |                 
+  quay.io/cilium/cilium:v1.12.1@sha256:ea2db1…                                    |                                              | DaemonSet:1 |            |          | 26m       |                 
+  quay.io/cilium/cilium@sha256:ea2db1…                                            |                                              | Pod:3       |            |          | 26m       |                 
+  quay.io/cilium/hubble-relay:v1.12.1@sha256:646582…                              |                                              | Unknown:2   |            |          | 26m       |                 
+  quay.io/cilium/hubble-relay@sha256:646582…                                      |                                              | Pod:1       |            |          | 26m       |                 
+  quay.io/cilium/hubble-ui-backend:v0.9.1@sha256:c4b86e…                          |                                              | Unknown:2   |            |          | 26m       |                 
+  quay.io/cilium/hubble-ui-backend@sha256:c4b86e…                                 |                                              | Unknown:1   |            |          | 26m       |                 
+  quay.io/cilium/hubble-ui:v0.9.1@sha256:baff61…                                  |                                              | Unknown:2   |            |          | 26m       |                 
+  quay.io/cilium/hubble-ui@sha256:baff61…                                         |                                              | Unknown:1   |            |          | 26m       |                 
+  quay.io/cilium/operator-aws:v1.12.1@sha256:cbd071…                              |                                              | Unknown:2   |            |          | 26m       |                 
+  quay.io/cilium/operator-aws@sha256:cbd071…                                      |                                              | Pod:2       |            |          | 26m       |                 
+  quay.io/cilium/startup-script@sha256:0862c6…                                    |                                              | Pod:1       |            |          | 26m       |                 
+                                                                                  |                                              | Unknown:2   |            |          |           |                 
+  registry.k8s.io/ingress-nginx/controller-chroot:v1.5.1@sha256:c1c091…           |                                              | Unknown:2   |            |          | 26m       |                 
+  registry.k8s.io/ingress-nginx/controller-chroot@sha256:c1c091…                  |                                              | Pod:1       |            |          | 26m       |                 
+  us.gcr.io/prod-enforce-fabc/chainctl@sha256:86131b…                             |                                              | Pod:1       |            |          | 26m       |                 
+                                                                                  |                                              | Unknown:2   |            |          |           |                 
+  us.gcr.io/prod-enforce-fabc/controlplane@sha256:825856…                         |                                              | Pod:1       |            |          | 26m       |                 
+                                                                                  |                                              | Unknown:2   |            |          |           |             
 ```
 
