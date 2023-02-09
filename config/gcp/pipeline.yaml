@@ -6,7 +6,7 @@ spec:
   params:
     - name: REGISTRY
       type: string
-      default: gchr.io
+      default: ghcr.io
     - name: USER
       type: string
       default: strongjz
